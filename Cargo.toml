@@ -1,0 +1,11 @@
+[package]
+name = "lambda-action-filter"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+lambda_runtime = "0.9"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+chrono = { version = "0.4", features = ["serde"] }
