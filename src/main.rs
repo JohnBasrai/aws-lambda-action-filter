@@ -25,11 +25,9 @@ async fn filter_actions(event: Value, _: Context) -> Result<Value, Error> {
 
     let input: Vec<Action> = serde_json::from_value(event)?;
 
-    // ⛔ COMPILATION ERROR: &str used as HashMap key with non-'static lifetime
     let mut selected: HashMap<&str, Action> = HashMap::new();
 
     for action in input {
-        // 💥 RUNTIME PANIC possibility if last_action_time is malformed or in the future
         let days_since_last = (now - action.last_action_time).num_days();
         if days_since_last < 7 {
             continue;
@@ -39,7 +37,6 @@ async fn filter_actions(event: Value, _: Context) -> Result<Value, Error> {
             continue;
         }
 
-        // Keep at most one action per entity
         selected
             .entry(&action.entity_id)
             .or_insert(action);
@@ -47,7 +44,6 @@ async fn filter_actions(event: Value, _: Context) -> Result<Value, Error> {
 
     let mut actions: Vec<Action> = selected.into_iter().map(|(_, v)| v).collect();
 
-    // ⚠️ BUSINESS LOGIC BUG: lexicographic sort—"high" comes after "low"
     actions.sort_by_key(|a| a.priority.clone());
 
     Ok(json!(actions))

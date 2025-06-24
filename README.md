@@ -18,13 +18,6 @@ The Lambda receives a JSON list of **actions**, each with:
 3. **High‑priority** actions should appear **first** in the output.
 4. Skip any action where **`last_action_time` is < 7 days ago**.
 
-Unfortunately, the code has **three deliberate problems**:
-
-| Type | What you’ll see |
-|------|-----------------|
-| Compilation error | Lifetime/key mismatch in a `HashMap` declaration |
-| Runtime panic | Timestamp math can panic with certain input |
-| Logic bug | Priority sorting is wrong (`"high"` can end up after `"low"`) |
 
 ## 🛠 Getting Started
 
