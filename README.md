@@ -31,7 +31,11 @@ The Lambda receives a JSON list of **actions**, each with:
 2. **Run the Lambda locally** with sample data:
 
    ```bash
-   cargo lambda invoke --data-file testdata/sample-input.json
+   cargo lambda invoke --data-file testdata/01_sample-input.json
+
+   cargo lambda invoke --data-file testdata/02_priority-input.json
+
+   cargo lambda invoke --data-file testdata/03_bad-input.json
    ```
 
    You should observe a compilation error first. Fix it, then re‑run to expose the panic and logic bug.
