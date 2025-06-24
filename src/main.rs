@@ -25,10 +25,10 @@ async fn filter_actions(event: Value, _: Context) -> Result<Value, Error> {
 
     let input: Vec<Action> = serde_json::from_value(event)?;
 
-    let mut selected: HashMap<&str, Action> = HashMap::new();
+    let mut selected: HashMap<String, Action> = HashMap::new();
 
     for action in input {
-        let days_since_last = (now - action.last_action_time).num_days();
+        let days_since_last = (now - action.last_action_time).to_std().unwrap().as_secs() / 86400;
         if days_since_last < 7 {
             continue;
         }
@@ -37,9 +37,7 @@ async fn filter_actions(event: Value, _: Context) -> Result<Value, Error> {
             continue;
         }
 
-        selected
-            .entry(&action.entity_id)
-            .or_insert(action);
+        selected.entry(action.entity_id.clone()).or_insert(action);
     }
 
     let mut actions: Vec<Action> = selected.into_iter().map(|(_, v)| v).collect();

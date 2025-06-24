@@ -1,0 +1,32 @@
+[
+  {
+    "entity_id": "entity_1",
+    "last_action_time": "2025-06-20T00:00:00Z",
+    "next_action_time": "2025-07-10T00:00:00Z",
+    "priority": "urgent"
+  },
+  {
+    "entity_id": "entity_2",
+    "last_action_time": "2025-06-01T00:00:00Z",
+    "next_action_time": "2025-07-01T00:00:00Z",
+    "priority": "normal"
+  },
+  {
+    "entity_id": "entity_3",
+    "last_action_time": "2025-03-01T00:00:00Z",
+    "next_action_time": "2026-01-01T00:00:00Z",
+    "priority": "urgent"
+  },
+  {
+    "entity_id": "entity_4",
+    "last_action_time": "2025-05-01T00:00:00Z",
+    "next_action_time": "2025-07-10T00:00:00Z",
+    "priority": "normal"
+  },
+  {
+    "entity_id": "entity_5",
+    "last_action_time": "2025-05-01T00:00:00Z",
+    "next_action_time": "2025-07-10T00:00:00Z",
+    "priority": "urgent"
+  }
+]
