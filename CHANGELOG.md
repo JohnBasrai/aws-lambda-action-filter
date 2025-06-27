@@ -21,8 +21,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and
   - Maintains identical behavior with improved structure and testability.
 
 ### Added
+- Added GitHub Actions CI with format check, build, and test steps
 - Added `process_actions` function to encapsulate business logic
 - Wrote unit tests using `anyhow::Result` and `ensure` for panic-free testing
+- Added `tracing` and `tracing-subscriber` crates for structured logging.
 - Added `parse_date` utility to safely parse ISO-8601 timestamps
 - Added README summary and improvements section
 
