@@ -36,9 +36,6 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-cargo-
 
-    - name: Install cargo-lambda
-      run: cargo install cargo-lambda
-
     - name: Check formatting
       run: cargo fmt --check
 
