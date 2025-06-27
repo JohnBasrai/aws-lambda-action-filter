@@ -1,6 +1,6 @@
 # AWS Lambda Action Filter
 
-This project is based on a coding interview assignment originally authored by Illya (assumed from LinkedIn attribution).
+This project is based on a coding interview assignment originally authored by Illya, as identified via the GitHub repository he shared during the interview.
 
 ## ✅ Overview
 
@@ -26,7 +26,7 @@ The original version had compilation errors, deprecated dependencies, and incorr
 ## ⚠️ Attribution & License
 
 > This project is based on a challenge provided during a technical interview.  
-> The original version appears to have been authored by Illya (as identified via LinkedIn).  
+> The original version appears to have been authored by Illya, based on the GitHub repository he shared during the interview process.
 > License and final attribution are pending confirmation from the original author.  
 > In the meantime, this code is shared for review purposes only and is not licensed for public use or redistribution.
 
