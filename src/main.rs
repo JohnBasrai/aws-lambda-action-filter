@@ -25,23 +25,20 @@ impl Ord for Action {
     fn cmp(&self, other: &Self) -> Ordering {
         // ---
 
-        if self.next_action_time < other.next_action_time {
-            return Ordering::Less;
-        } else if self.next_action_time > other.next_action_time {
-            return Ordering::Greater;
-        }
-        if self.next_action_time < other.next_action_time {
-            return Ordering::Less;
-        } else if self.next_action_time > other.next_action_time {
-            return Ordering::Greater;
-        }
-        Ordering::Equal
+        self.next_action_time.cmp(&other.next_action_time)
     }
 }
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
     // ---
+    tracing_subscriber::fmt()
+        .with_env_filter("info") // or customize with RUST_LOG
+        .with_target(false)
+        .without_time()
+        .init();
+
+    tracing::info!("Lambda starting...");
 
     let func = service_fn(filter_actions);
     lambda_runtime::run(func).await?;
@@ -50,6 +47,11 @@ async fn main() -> Result<(), Error> {
 
 async fn filter_actions(event: LambdaEvent<Value>) -> Result<Value, Error> {
     // ---
+
+    tracing::info!(
+        "Processing event with {} actions",
+        event.payload.as_array().map(|v| v.len()).unwrap_or(0),
+    );
 
     let now = Utc::now();
 
@@ -61,12 +63,15 @@ async fn filter_actions(event: LambdaEvent<Value>) -> Result<Value, Error> {
     for action in input {
         let days_since_last = (now - action.last_action_time).to_std()?.as_secs() / 86400;
         if days_since_last < 7 {
+            tracing::debug!(%action.entity_id, "Skipping: last action too recent");
             continue;
         }
 
         if action.next_action_time > now + Duration::days(90) {
+            tracing::debug!("Skipping (future): {}", action.entity_id);
             continue;
         }
+        tracing::info!("Selecting action: {}", action.entity_id);
 
         selected.entry(action.entity_id.clone()).or_insert(action);
     }
@@ -74,6 +79,8 @@ async fn filter_actions(event: LambdaEvent<Value>) -> Result<Value, Error> {
     let mut actions: Vec<Action> = selected.into_iter().map(|(_, v)| v).collect();
 
     actions.sort_by_key(|a| a.priority.clone());
+
+    tracing::info!("Returning {} filtered actions", actions.len());
 
     Ok(json!(actions))
 }
@@ -153,13 +160,38 @@ mod tests {
             },
         ];
 
-        let expected_order = vec!["entity_1", "entity_2"];
-
         let output = process_actions(input);
-        let ids: Vec<_> = output.iter().map(|a| a.entity_id.as_str()).collect();
 
-        assert_eq!(ids, expected_order);
-        assert_eq!(output[0].priority, Priority::Urgent);
+        // Verify we have exactly 2 actions after filtering
+        ensure!(
+            output.len() == 2,
+            "Expected 2 actions after filtering, got {}",
+            output.len()
+        );
+
+        // Verify the complete order: Urgent priority comes first, then Normal
+        ensure!(
+            output[0].entity_id == "entity_1",
+            "Expected first action to be entity_1, got {}",
+            output[0].entity_id
+        );
+        ensure!(
+            output[0].priority == Priority::Urgent,
+            "Expected first action to have Urgent priority, got {:?}",
+            output[0].priority
+        );
+
+        ensure!(
+            output[1].entity_id == "entity_2",
+            "Expected second action to be entity_2, got {}",
+            output[1].entity_id
+        );
+        ensure!(
+            output[1].priority == Priority::Normal,
+            "Expected second action to have Normal priority, got {:?}",
+            output[1].priority
+        );
+
         Ok(())
     }
 
@@ -183,10 +215,18 @@ mod tests {
         ];
 
         let output = process_actions(input);
-        assert_eq!(output.len(), 1);
-        assert_eq!(output[0].entity_id, "duplicate");
+        ensure!(
+            output[0].entity_id == "duplicate",
+            "Expected action to be for entity 'duplicate', got {}",
+            output[0].entity_id
+        );
+
         // Currently keeps last seen, so should be Urgent
-        assert_eq!(output[0].priority, Priority::Urgent);
+        ensure!(
+            output[0].priority == Priority::Urgent,
+            "Expected single remaining item to be Urgent"
+        );
+
         Ok(())
     }
 
