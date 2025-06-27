@@ -3,7 +3,6 @@ use lambda_runtime::{service_fn, Error, LambdaEvent};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::cmp::{Eq, Ordering, PartialOrd};
-use std::collections::HashMap;
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(rename_all = "lowercase")]
@@ -53,36 +52,45 @@ async fn filter_actions(event: LambdaEvent<Value>) -> Result<Value, Error> {
         event.payload.as_array().map(|v| v.len()).unwrap_or(0),
     );
 
-    let now = Utc::now();
-
     let (value, _context) = event.into_parts();
     let input: Vec<Action> = serde_json::from_value(value)?;
 
-    let mut selected: HashMap<String, Action> = HashMap::new();
-
-    for action in input {
-        let days_since_last = (now - action.last_action_time).to_std()?.as_secs() / 86400;
-        if days_since_last < 7 {
-            tracing::debug!(%action.entity_id, "Skipping: last action too recent");
-            continue;
-        }
-
-        if action.next_action_time > now + Duration::days(90) {
-            tracing::debug!("Skipping (future): {}", action.entity_id);
-            continue;
-        }
-        tracing::info!("Selecting action: {}", action.entity_id);
-
-        selected.entry(action.entity_id.clone()).or_insert(action);
-    }
-
-    let mut actions: Vec<Action> = selected.into_iter().map(|(_, v)| v).collect();
-
-    actions.sort_by_key(|a| a.priority.clone());
+    let actions = process_actions(input);
 
     tracing::info!("Returning {} filtered actions", actions.len());
 
     Ok(json!(actions))
+}
+
+fn process_actions(input: Vec<Action>) -> Vec<Action> {
+    // ---
+
+    let today = Utc::now();
+
+    let filtered: Vec<Action> = input
+        .into_iter()
+        .filter(|a| {
+            // Skip if next_action_time is more than 90 days away
+            a.next_action_time <= today + Duration::days(90)
+        })
+        .filter(|a| {
+            // Skip if last_action_time is within the past 7 days
+            a.last_action_time <= today - Duration::days(7)
+        })
+        .collect();
+
+    // Deduplicate: keep one per entity_id (last one wins)
+    use std::collections::HashMap;
+    let mut map = HashMap::new();
+    for action in filtered {
+        map.insert(action.entity_id.clone(), action);
+    }
+
+    let mut deduped: Vec<Action> = map.into_values().collect();
+
+    deduped.sort_by(|a, b| a.priority.cmp(&b.priority));
+
+    deduped
 }
 
 #[cfg(test)]
@@ -97,38 +105,6 @@ mod tests {
         let temp = DateTime::parse_from_rfc3339(s)?;
         Ok(temp.with_timezone(&Utc))
     }
-
-    fn process_actions(input: Vec<Action>) -> Vec<Action> {
-        // ---
-
-        let today = Utc::now();
-
-        let filtered: Vec<Action> = input
-            .into_iter()
-            .filter(|a| {
-                // Skip if next_action_time is more than 90 days away
-                a.next_action_time <= today + chrono::Duration::days(90)
-            })
-            .filter(|a| {
-                // Skip if last_action_time is within the past 7 days
-                a.last_action_time <= today - chrono::Duration::days(7)
-            })
-            .collect();
-
-        // Deduplicate: keep one per entity_id (last one wins)
-        use std::collections::HashMap;
-        let mut map = HashMap::new();
-        for action in filtered {
-            map.insert(action.entity_id.clone(), action);
-        }
-
-        let mut deduped: Vec<Action> = map.into_values().collect();
-
-        deduped.sort_by(|a, b| a.priority.cmp(&b.priority));
-
-        deduped
-    }
-
     #[test]
     fn test_filter_and_sort_actions() -> Result<()> {
         // ---
