@@ -14,6 +14,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and
 
 ## [0.1.1] – 2025-06-27
 
+### Changed 
+- Move action filtering logic to `process_actions` function
+  - Improves modularity and reuse between production and test code.
+  - Eliminated test-only duplicate of the filtering logic.
+  - Maintains identical behavior with improved structure and testability.
+
 ### Added
 - Added `process_actions` function to encapsulate business logic
 - Wrote unit tests using `anyhow::Result` and `ensure` for panic-free testing
