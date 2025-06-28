@@ -1,0 +1,28 @@
+FROM rust:1.85-slim
+
+# Install system deps for building Rust packages and running cargo-lambda
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libssl-dev \
+    pkg-config \
+    curl \
+    ca-certificates \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Add cargo bin path explicitly
+ENV PATH="/usr/local/cargo/bin:${PATH}"
+
+# Install rustfmt component
+RUN rustup component add rustfmt
+
+# Install cargo-lambda
+RUN cargo install cargo-lambda --version 1.8.5 --locked --quiet
+
+# Default user
+RUN useradd -m dev
+WORKDIR /app
+
+USER root
+
+# Entry point overriden by docker-compose.yml
+CMD [ "bash" ]

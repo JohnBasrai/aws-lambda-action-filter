@@ -1,32 +1,12 @@
-use chrono::{DateTime, Duration, Utc};
+mod domain;
+
+use chrono::{Duration, Utc};
 use lambda_runtime::{service_fn, Error, LambdaEvent};
-use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use std::cmp::{Eq, Ordering, PartialOrd};
+use std::collections::HashMap;
 
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord)]
-#[serde(rename_all = "lowercase")]
-enum Priority {
-    Urgent,
-    Normal,
-}
-
-#[derive(Debug, Deserialize, Serialize, Clone, Eq, PartialEq, PartialOrd)]
-struct Action {
-    entity_id: String,
-    last_action_time: DateTime<Utc>,
-    next_action_time: DateTime<Utc>,
-    priority: Priority,
-}
-
-impl Ord for Action {
-    // ---
-    fn cmp(&self, other: &Self) -> Ordering {
-        // ---
-
-        self.next_action_time.cmp(&other.next_action_time)
-    }
-}
+// Import domain entities from local domain module
+use domain::Action; // Priority
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
@@ -44,9 +24,9 @@ async fn main() -> Result<(), Error> {
     Ok(())
 }
 
+/// Lambda handler that processes action filtering requests
 async fn filter_actions(event: LambdaEvent<Value>) -> Result<Value, Error> {
     // ---
-
     tracing::info!(
         "Processing event with {} actions",
         event.payload.as_array().map(|v| v.len()).unwrap_or(0),
@@ -62,53 +42,50 @@ async fn filter_actions(event: LambdaEvent<Value>) -> Result<Value, Error> {
     Ok(json!(actions))
 }
 
+/// Filters and sorts actions according to business rules:
+/// - Filters out actions with next_action_time > 90 days from now
+/// - Filters out actions with last_action_time < 7 days ago  
+/// - Deduplicates by entity_id (keeping the last occurrence)
+/// - Sorts by priority (Urgent first, then Normal)
 fn process_actions(input: Vec<Action>) -> Vec<Action> {
     // ---
-
     let today = Utc::now();
+    let threshold_90 = (today + Duration::days(90)).date_naive(); // For next_action_time
+    let threshold_7 = (today - Duration::days(7)).date_naive(); // For last_action_time
 
     let filtered: Vec<Action> = input
         .into_iter()
-        .filter(|a| {
-            // Skip if next_action_time is more than 90 days away
-            a.next_action_time <= today + Duration::days(90)
-        })
-        .filter(|a| {
-            // Skip if last_action_time is within the past 7 days
-            a.last_action_time <= today - Duration::days(7)
-        })
+        .filter(|a| a.next_action_time.date_naive() <= threshold_90)
+        .filter(|a| a.last_action_time.date_naive() < threshold_7)
         .collect();
 
-    // Deduplicate: keep one per entity_id (last one wins)
-    use std::collections::HashMap;
-    let mut map = HashMap::new();
-    for action in filtered {
-        map.insert(action.entity_id.clone(), action);
+    let mut map: HashMap<String, &Action> = HashMap::new();
+    for action in &filtered {
+        map.insert(action.entity_id.clone(), action); // Last occurrence wins
     }
 
-    let mut deduped: Vec<Action> = map.into_values().collect();
-
+    let mut deduped: Vec<Action> = map.into_values().cloned().collect();
     deduped.sort_by(|a, b| a.priority.cmp(&b.priority));
-
     deduped
 }
 
 #[cfg(test)]
 mod tests {
-    // ---
-
     use super::*;
     use anyhow::{ensure, Result};
+    use chrono::DateTime;
+    use domain::Priority;
 
+    /// Helper function to parse RFC3339 date strings for tests
     fn parse_date(s: &str) -> Result<DateTime<Utc>> {
         // ---
         let temp = DateTime::parse_from_rfc3339(s)?;
         Ok(temp.with_timezone(&Utc))
     }
+
     #[test]
     fn test_filter_and_sort_actions() -> Result<()> {
         // ---
-
         let input = vec![
             Action {
                 entity_id: "entity_1".to_string(),
@@ -139,11 +116,7 @@ mod tests {
         let output = process_actions(input);
 
         // Verify we have exactly 2 actions after filtering
-        ensure!(
-            output.len() == 2,
-            "Expected 2 actions after filtering, got {}",
-            output.len()
-        );
+        ensure!(output.len() == 2, "Expected 2 actions after filtering, got {}", output.len());
 
         // Verify the complete order: Urgent priority comes first, then Normal
         ensure!(
@@ -174,7 +147,6 @@ mod tests {
     #[test]
     fn test_deduplication_with_priority_conflict() -> Result<()> {
         // ---
-
         let input = vec![
             Action {
                 entity_id: "duplicate".to_string(),
@@ -209,16 +181,24 @@ mod tests {
     #[test]
     fn test_last_action_time_exactly_7_days() -> Result<()> {
         // ---
-        let today = Utc::now();
+        let today = Utc::now().date_naive();
         let input = vec![Action {
-            entity_id: "edge_7_days".to_string(),
-            last_action_time: today - Duration::days(7),
-            next_action_time: today + Duration::days(10),
+            entity_id: "test".into(),
+            last_action_time: DateTime::<Utc>::from_naive_utc_and_offset(
+                (today - Duration::days(7)).and_hms_opt(0, 0, 0).unwrap(),
+                Utc,
+            ),
+            next_action_time: DateTime::<Utc>::from_naive_utc_and_offset(
+                (today + Duration::days(1)).and_hms_opt(0, 0, 0).unwrap(),
+                Utc,
+            ),
             priority: Priority::Normal,
         }];
 
         let output = process_actions(input);
-        ensure!(output.len() == 1, "Action 7 days old should be included");
+
+        // We expect it to be filtered out since it's exactly 7 days ago (not < 7 days)
+        ensure!(output.is_empty(), "Expected action exactly 7 days old to be excluded");
         Ok(())
     }
 

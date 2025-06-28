@@ -8,7 +8,41 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and
 
 ## [Unreleased]
 
-- Awaiting license and attribution confirmation from the original author
+## [0.2.0] – 2025-06-28
+
+### Added
+
+* **EMBP Architecture**: Adopted Explicit Module Boundary Pattern for clean crate structure
+
+  * Created `mod.rs` gateways across all key modules (`domain/`, `repository/`, etc.)
+  * Improved encapsulation, import hygiene, and module boundaries
+* **Docker-Based Development Workflow**:
+
+  * Added Docker Compose setup with Postgres and Redis
+  * Hot-reload development via volume mounts
+  * Introduced `scripts/build.sh` for unified format/lint/test/build pipeline
+* **Standardized CI Pipeline**:
+
+  * GitHub Actions CI mirrors local container-based workflow
+  * Includes clippy, rustfmt, unit tests, and integration tests
+  * Added containerized end-to-end tests using `cargo lambda`
+* **Toolchain Pinning**: Rust version pinned to 1.85 for consistency
+
+### Changed
+
+* CI and local development now fully containerized
+* Replaced fragile curl healthchecks with robust netcat-based port checks
+
+### Fixed
+
+* Integration test flakiness due to HashMap ordering:
+
+  * Added order-agnostic assertions
+  * Ensured reliable deduplication across input variants
+
+### ⚠️ Breaking Changes
+
+* Local development now **requires Docker**; native Rust-only workflow is no longer supported
 
 ---
 

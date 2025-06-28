@@ -1,0 +1,26 @@
+
+services:
+  lambda:
+    user: root # We're currently in dev mode so this is Ok, don't do this for production
+    build:
+      context: .
+      dockerfile: Dockerfile.lambda-runtime
+    ports:
+      - "9000:9000"
+    volumes:
+      - ./src:/app/src             # hot-reload watch point for lambda server
+      - ./tests:/app/tests         # Integration tests.
+      - ./testdata:/app/testdata   # testdata for lambda invoke
+      - ./Cargo.toml:/app/Cargo.toml
+      - ./Cargo.lock:/app/Cargo.lock
+      - ./rustfmt.toml:/app/rustfmt.toml
+      - ${CR8S_SCRATCH_DIR:-/var/tmp}/aws/dev-cargo:/usr/local/cargo/registry
+      - ${CR8S_SCRATCH_DIR:-/var/tmp}/aws/dev-target:/app/target
+    environment:
+      RUST_LOG: info
+    healthcheck:
+        test: ["CMD", "nc", "-z", "localhost", "9000"]
+        interval: 5s
+        timeout: 2s
+        retries: 10
+    command: [ "cargo", "lambda", "watch" ]
