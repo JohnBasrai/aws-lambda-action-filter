@@ -1,6 +1,6 @@
 # AWS Lambda Action Filter
 
-[![CI](https://github.com/JohnBasrai/aws-lambda-action-filter/actions/workflows/ci.yml/badge.svg)](https://github.com/yourusername/aws-lambda-action-filter/actions)
+[![CI](https://github.com/JohnBasrai/aws-lambda-action-filter/actions/workflows/ci.yml/badge.svg)](https://github.com/JohnBasrai/aws-lambda-action-filter/actions)
 ![Rust](https://img.shields.io/badge/rust-1.85.0-blue?logo=rust)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 ![Last Commit](https://img.shields.io/github/last-commit/JohnBasrai/aws-lambda-action-filter)
