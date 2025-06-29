@@ -22,11 +22,13 @@ if ! nc -z localhost 9000; then
   exit 1
 fi
 
+RUN="docker exec aws-lambda-action-filter-lambda-1"
 
 # Run all tests inside the container
-docker exec aws-lambda-action-filter-lambda-1 cargo fmt --version
-docker exec aws-lambda-action-filter-lambda-1 cargo fmt --check
-docker exec aws-lambda-action-filter-lambda-1 cargo build --release --quiet
-docker exec aws-lambda-action-filter-lambda-1 cargo test --release --quiet
+${RUN} cargo fmt --version
+${RUN} cargo fmt --check
+${RUN} cargo clippy --quiet --all-features -- -D warnings
+${RUN} cargo build --release --quiet
+${RUN} cargo test --release --quiet -- --nocapture
 
 echo "All tests passed!"
