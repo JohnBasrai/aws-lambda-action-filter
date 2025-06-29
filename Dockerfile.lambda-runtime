@@ -18,6 +18,9 @@ RUN rustup component add rustfmt
 # Install cargo-lambda
 RUN cargo install cargo-lambda --version 1.8.5 --locked --quiet
 
+# Install clippy component
+RUN rustup component add clippy
+
 # Default user
 RUN useradd -m dev
 WORKDIR /app
