@@ -8,6 +8,20 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and
 
 ## [Unreleased]
 
+### Changed
+- **Test Organization**: Split integration tests into focused test files
+  - `tests/basic_filter_tests.rs` - Core integration tests with static test data
+  - `tests/edge_case_tests.rs` - Dynamic boundary condition tests
+- **Test Infrastructure Enhancement**: Implemented dynamic test data generation
+  - Added comprehensive boundary testing for time-based filtering rules
+  - Self-documenting test cases with clear business rule descriptions
+- **Enhanced Test Reporting**: Added aligned, formatted test output for better readability
+
+### Technical
+- Improved test maintainability with descriptive entity names and test descriptions
+
+---
+
 ## [0.2.0] – 2025-06-28
 
 ### Added

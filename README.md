@@ -29,7 +29,8 @@ src/
 ├── main.rs             ← Lambda entry point & business logic  
 ├── domain.rs           ← Domain entities (Action, Priority)
 tests/
-├── integration_tests.rs ← End-to-end lambda testing
+├── basic_filter_tests.rs ← Core integration tests with static data  
+├── edge_case_tests.rs    ← Dynamic boundary condition tests
 testdata/
 ├── *.json              ← Test input files
 scripts/
@@ -82,17 +83,38 @@ The Lambda applies these filtering and processing rules:
 - Deduplication behavior with priority conflicts
 - Date parsing and filtering logic
 
-### Integration Tests (`tests/integration_tests.rs`)
+### Integration Tests
+
+**Basic Integration Tests (`tests/basic_filter_tests.rs`)**
 - **Real lambda execution** using `cargo lambda invoke`
 - **End-to-end validation** from JSON input to JSON output
 - **Error handling** verification (invalid enum variants)
 - **Order-agnostic testing** for robust HashMap-based results
 
+**Dynamic Edge Case Tests (`tests/edge_case_tests.rs`)**
+- **Boundary condition testing** with dynamic test data generation
+- **Comprehensive business rule validation** (7-day/90-day boundaries)
+- **Self-documenting test cases** with clear descriptions
+- **Time-independent testing** that works regardless of execution date
+
 **Test Data Files:**
 - `01_sample-input.json` - Basic filtering and deduplication
 - `02_priority-input.json` - Priority sorting validation  
 - `03_bad-input.json` - Error handling (invalid priority variant)
-- `04_edge-cases.json` - Boundary conditions and complex scenarios
+
+### Running Tests
+
+```bash
+# Run all tests
+cargo test
+
+# Run specific test suites
+cargo test --test basic_filter_tests    # Basic integration tests
+cargo test --test edge_case_tests       # Dynamic edge case tests
+
+# Run unit tests only
+cargo test --lib
+```
 
 ## 🚀 Usage
 
